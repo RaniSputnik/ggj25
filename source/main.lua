@@ -6,6 +6,8 @@ import "CoreLibs/timer"
 
 local gfx <const> = playdate.graphics
 
+import 'state'
+
 
 local bubbleMinRadius = 6
 local bubbleMaxRadius = 120
@@ -26,21 +28,13 @@ end
 
 
 local bubbleWandSprite = nil
-local bubbleRadius = bubbleMinRadius
-local bubbleWandRaised = false
-local bubbleWandLoaded = false
-local wandIn = playdate.graphics.animator.new(320, 240, 210, playdate.easingFunctions.outElastic)
-local wandOut = playdate.graphics.animator.new(320, 210, 240, playdate.easingFunctions.outElastic)
+local wandIn = gfx.animator.new(320, 240, 210, playdate.easingFunctions.outElastic)
+local wandOut = gfx.animator.new(320, 210, 240, playdate.easingFunctions.outElastic)
 
+local bubbleWandImage = gfx.image.new("images/bubbleWand")
+assert(bubbleWandImage)
 
 function myGameSetUp()
-    local bubbleWandImage = gfx.image.new("images/bubbleWand")
-    assert(bubbleWandImage)
-
-    bubbleWandSprite = gfx.sprite.new(bubbleWandImage)
-    bubbleWandSprite:moveTo(140, 240)
-    bubbleWandSprite:add()
-
     -- We want an environment displayed behind our sprite.
     -- There are generally two ways to do this:
     -- 1) Use setBackgroundDrawingCallback() to draw a background image. (This is what we're doing below.)
@@ -74,53 +68,95 @@ myGameSetUp()
 -- This function is called right before every frame is drawn onscreen.
 -- Use this function to poll input, run game logic, and move sprites.
 
-function playdate.update()
+
+class('BlowBubblesState').extends(State)
+
+
+
+
+function BlowBubblesState:init()
+    BlowBubblesState.super.init()
+    self.bubbleWandSprite = gfx.sprite.new(bubbleWandImage)
+    -- wandIn = playdate.graphics.animator.new(320, 240, 210, playdate.easingFunctions.outElastic)
+    -- wandOut = playdate.graphics.animator.new(320, 210, 240, playdate.easingFunctions.outElastic)
+end
+
+function BlowBubblesState:enter()
+    self.bubbleWandSprite:moveTo(140, 240)
+    self.bubbleWandSprite:add()
+
+    self.bubbleRadius = bubbleMinRadius
+    self.bubbleWandRaised = false
+    self.bubbleWandLoaded = false
+end
+
+function BlowBubblesState:update()
     if playdate.buttonIsPressed(playdate.kButtonA) then
-        if not bubbleWandRaised then
+        if not self.bubbleWandRaised then
             wandIn:reset()
-            bubbleWandRaised = true
+            self.bubbleWandRaised = true
         end
 
-        bubbleWandSprite:moveTo(bubbleWandSprite.x, wandIn:currentValue())
+        self.bubbleWandSprite:moveTo(self.bubbleWandSprite.x, wandIn:currentValue())
 
 
-        if bubbleWandLoaded then
+        if self.bubbleWandLoaded then
             local micLevel = getMicInput()
-            local tension = (bubbleRadius - bubbleMinRadius) / (bubbleMaxRadius - bubbleMinRadius)
+            local tension = (self.bubbleRadius - bubbleMinRadius) / (bubbleMaxRadius - bubbleMinRadius)
             local currentPopPoint = bubblePopsAt - tension * tension * tension
             if micLevel > currentPopPoint then
-                -- TODO: Play pop sound
-                bubbleRadius = bubbleMinRadius
-                bubbleWandLoaded = false
+                self:pop_bubble()
             else
-                bubbleRadius = bubbleRadius + micLevel * bubbleSizeIncreaseRate
+                self.bubbleRadius = self.bubbleRadius + micLevel * bubbleSizeIncreaseRate
             end
         end
     else
-        if bubbleWandRaised then
+        if self.bubbleWandRaised then
             wandOut:reset()
-            bubbleWandRaised = false
+            self.bubbleWandRaised = false
+            self:pop_bubble()
         end
 
-        bubbleWandSprite:moveTo(bubbleWandSprite.x, wandOut:currentValue())
+        self.bubbleWandSprite:moveTo(self.bubbleWandSprite.x, wandOut:currentValue())
         -- TODO: Add wand reload delay
-        bubbleWandLoaded = true
+        self.bubbleWandLoaded = true
     end
 
+    return self
+end
 
-    -- Call the functions below in playdate.update() to draw sprites and keep
-    -- timers updated. (We aren't using timers in this example, but in most
-    -- average-complexity games, you will.)
+function BlowBubblesState:draw()
+    if self.bubbleWandRaised and wandIn:ended() and self.bubbleRadius > 12 then
+        gfx.pushContext()
+        gfx.setLineWidth(1)
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawCircleAtPoint(140, 194 - (self.bubbleRadius - bubbleMinRadius) * 0.5, self.bubbleRadius)
+        gfx.popContext()
+    end
+end
+
+function BlowBubblesState:pop_bubble()
+    if self.bubbleRadius <= bubbleMinRadius then
+        return -- No bubble to pop
+    end
+
+    -- TODO: Play pop sound
+    self.bubbleRadius = bubbleMinRadius
+    self.bubbleWandLoaded = false
+    print("Bubble popped!")
+end
+
+function BlowBubblesState:exit()
+    self.bubbleWandSprite:remove()
+end
+
+local blowBubblesState = BlowBubblesState()
+local stateMachine = StateMachine(blowBubblesState)
+function playdate.update()
+    stateMachine:update()
 
     gfx.sprite.update()
     playdate.timer.updateTimers()
 
-
-    if bubbleWandRaised and wandIn:ended() and bubbleRadius > 12 then
-        gfx.pushContext()
-        gfx.setLineWidth(1)
-        gfx.setColor(gfx.kColorBlack)
-        gfx.drawCircleAtPoint(140, 194 - (bubbleRadius - bubbleMinRadius) * 0.5, bubbleRadius)
-        gfx.popContext()
-    end
+    stateMachine:draw()
 end
