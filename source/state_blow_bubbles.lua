@@ -1,6 +1,7 @@
 import "CoreLibs/graphics"
 
 local gfx <const> = playdate.graphics
+local afx <const> = playdate.sound
 
 import 'state_dancing'
 
@@ -11,6 +12,8 @@ local bubbleSizeIncreaseRate = 3
 
 local bubbleWandImage = gfx.image.new("images/bubble-wand")
 assert(bubbleWandImage)
+local bubblePopSound = afx.sampleplayer.new("sounds/bubble-pop")
+assert(bubblePopSound)
 
 class('BlowBubblesState').extends(State)
 
@@ -103,7 +106,7 @@ function BlowBubblesState:popBubble()
         return -- No bubble to pop
     end
 
-    -- TODO: Play pop sound
+    bubblePopSound:play()
     self.bubbleRadius = bubbleMinRadius
     self.bubbleWandLoaded = false
     print("Bubble popped!")
