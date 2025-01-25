@@ -1,5 +1,6 @@
 import "CoreLibs/animator"
 import "CoreLibs/object"
+import "CoreLibs/frameTimer"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
@@ -54,6 +55,7 @@ function playdate.update()
 
     gfx.sprite.update()
     playdate.timer.updateTimers()
+    playdate.frameTimer.updateTimers()
 
     stateMachine:draw()
 end
