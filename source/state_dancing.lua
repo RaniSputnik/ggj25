@@ -29,6 +29,11 @@ function DancingState:enter()
     self.dancer2:playAnimation()
 end
 
+function DancingState:exit()
+    self.dancer:remove()
+    self.dancer2:remove()
+end
+
 function DancingState:update()
     if playdate.buttonJustPressed(playdate.kButtonB) then
         return BlowBubblesState()
