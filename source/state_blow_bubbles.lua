@@ -2,13 +2,14 @@ import "CoreLibs/graphics"
 
 local gfx <const> = playdate.graphics
 
+import 'state_dancing'
 
 local bubbleMinRadius = 6
 local bubbleMaxRadius = 120
 local bubblePopsAt = 0.7
 local bubbleSizeIncreaseRate = 3
 
-local bubbleWandImage = gfx.image.new("images/bubbleWand")
+local bubbleWandImage = gfx.image.new("images/bubble-wand")
 assert(bubbleWandImage)
 
 class('BlowBubblesState').extends(State)
@@ -29,9 +30,17 @@ function BlowBubblesState:enter()
     self.bubbleRadius = bubbleMinRadius
     self.bubbleWandRaised = false
     self.bubbleWandLoaded = false
+
+    local isListening, listeningDevice = playdate.sound.micinput.startListening()
+    assert(isListening)
+    print("Started microphone", isListening, listeningDevice)
 end
 
 function BlowBubblesState:update()
+    if playdate.buttonJustPressed(playdate.kButtonB) then
+        return DancingState()
+    end
+
     if playdate.buttonIsPressed(playdate.kButtonA) then
         if not self.bubbleWandRaised then
             self.wandIn:reset()
@@ -78,6 +87,9 @@ end
 
 function BlowBubblesState:exit()
     self.bubbleWandSprite:remove()
+
+    playdate.sound.micinput.stopListening()
+    print("Stopped microphone input")
 end
 
 -- Methods

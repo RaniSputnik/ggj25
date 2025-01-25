@@ -8,6 +8,7 @@ local gfx <const> = playdate.graphics
 
 import 'state'
 import 'state_blow_bubbles'
+import 'state_dancing'
 
 
 function myGameSetUp()
@@ -28,10 +29,6 @@ function myGameSetUp()
             backgroundImage:draw(0, 0)
         end
     )
-
-    local isListening, listeningDevice = playdate.sound.micinput.startListening()
-    assert(isListening)
-    print("Started microphone", isListening, listeningDevice)
 end
 
 -- Now we'll call the function above to configure our game.
@@ -45,7 +42,9 @@ myGameSetUp()
 -- Use this function to poll input, run game logic, and move sprites.
 
 local blowBubblesState = BlowBubblesState()
-local stateMachine = StateMachine(blowBubblesState)
+local dancingState = DancingState()
+
+local stateMachine = StateMachine(dancingState)
 function playdate.update()
     stateMachine:update()
 
