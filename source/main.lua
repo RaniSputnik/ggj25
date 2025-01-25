@@ -15,7 +15,37 @@ local gfx <const> = playdate.graphics
 
 local playerSprite = nil
 
+local bubbleMinRadius = 5
+local bubbleMaxRadius = 120
+local bubblePopsAt = 0.7
+local bubbleUnderTensionPopsAt = 0.6
+local bubbleSizeIncreaseRate = 3
+
+
 -- A function to set up our game environment.
+
+
+local function clamp(value, min, max)
+    return math.max(math.min(value, max), min)
+end
+
+
+
+local function getMicInput()
+    -- Will we need to dynamically adjust this value?
+    local micInputCutoff = 0.1
+    local micLevel = playdate.sound.micinput.getLevel()
+    if micLevel < micInputCutoff then
+        return 0
+    end
+
+    return micLevel
+end
+
+
+
+local bubbleRadius = bubbleMinRadius
+
 
 function myGameSetUp()
     -- Set up the player sprite.
@@ -44,6 +74,10 @@ function myGameSetUp()
             backgroundImage:draw(0, 0)
         end
     )
+
+    local isListening, listeningDevice = playdate.sound.micinput.startListening()
+    assert(isListening)
+    print("Started microphone", isListening, listeningDevice)
 end
 
 -- Now we'll call the function above to configure our game.
@@ -78,4 +112,22 @@ function playdate.update()
 
     gfx.sprite.update()
     playdate.timer.updateTimers()
+
+    local micLevel = getMicInput()
+
+    local tension = (bubbleRadius - bubbleMinRadius) / (bubbleMaxRadius - bubbleMinRadius)
+    local currentPopPoint = bubblePopsAt - tension * tension * tension
+    if micLevel > currentPopPoint then
+        -- TODO: Play pop sound
+        bubbleRadius = 0
+    else
+        bubbleRadius = bubbleRadius + micLevel * bubbleSizeIncreaseRate
+    end
+
+
+    gfx.pushContext()
+    gfx.setLineWidth(1)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawCircleAtPoint(150, 242 - bubbleRadius, bubbleRadius)
+    gfx.popContext()
 end
