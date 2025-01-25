@@ -30,10 +30,10 @@ function BlowBubblesState:enter()
     self.bubbleRadius = bubbleMinRadius
     self.bubbleWandRaised = false
     self.bubbleWandLoaded = false
+end
 
-    local isListening, listeningDevice = playdate.sound.micinput.startListening()
-    assert(isListening)
-    print("Started microphone", isListening, listeningDevice)
+function BlowBubblesState:exit()
+    self.bubbleWandSprite:remove()
 end
 
 function BlowBubblesState:update()
@@ -83,13 +83,6 @@ function BlowBubblesState:draw()
         gfx.drawCircleAtPoint(140, 194 - (self.bubbleRadius - bubbleMinRadius) * 0.5, self.bubbleRadius)
         gfx.popContext()
     end
-end
-
-function BlowBubblesState:exit()
-    self.bubbleWandSprite:remove()
-
-    playdate.sound.micinput.stopListening()
-    print("Stopped microphone input")
 end
 
 -- Methods
