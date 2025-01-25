@@ -4,32 +4,13 @@ import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
 
--- Declaring this "gfx" shorthand will make your life easier. Instead of having
--- to preface all graphics calls with "playdate.graphics", just use "gfx."
--- Performance will be slightly enhanced, too.
--- NOTE: Because it's local, you'll have to do it in every .lua source file.
-
 local gfx <const> = playdate.graphics
 
--- Here's our player sprite declaration. We'll scope it to this file because
--- several functions need to access it.
-
-local playerSprite = nil
 
 local bubbleMinRadius = 6
 local bubbleMaxRadius = 120
 local bubblePopsAt = 0.7
-local bubbleUnderTensionPopsAt = 0.6
 local bubbleSizeIncreaseRate = 3
-
-
--- A function to set up our game environment.
-
-
-local function clamp(value, min, max)
-    return math.max(math.min(value, max), min)
-end
-
 
 
 local function getMicInput()
@@ -44,7 +25,7 @@ local function getMicInput()
 end
 
 
-
+local bubbleWandSprite = nil
 local bubbleRadius = bubbleMinRadius
 local bubbleWandRaised = false
 local bubbleWandLoaded = false
@@ -53,15 +34,6 @@ local wandOut = playdate.graphics.animator.new(320, 210, 240, playdate.easingFun
 
 
 function myGameSetUp()
-    -- Set up the player sprite.
-
-    local playerImage = gfx.image.new("images/playerImage")
-    assert(playerImage) -- make sure the image was where we thought
-
-    playerSprite = gfx.sprite.new(playerImage)
-    playerSprite:moveTo(200, 120) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
-    playerSprite:add()            -- This is critical!
-
     local bubbleWandImage = gfx.image.new("images/bubbleWand")
     assert(bubbleWandImage)
 
@@ -103,22 +75,6 @@ myGameSetUp()
 -- Use this function to poll input, run game logic, and move sprites.
 
 function playdate.update()
-    -- Poll the d-pad and move our player accordingly.
-    -- (There are multiple ways to read the d-pad; this is the simplest.)
-    if playdate.buttonIsPressed(playdate.kButtonUp) then
-        playerSprite:moveBy(0, -2)
-    end
-    if playdate.buttonIsPressed(playdate.kButtonRight) then
-        playerSprite:moveBy(2, 0)
-    end
-    if playdate.buttonIsPressed(playdate.kButtonDown) then
-        playerSprite:moveBy(0, 2)
-    end
-    if playdate.buttonIsPressed(playdate.kButtonLeft) then
-        playerSprite:moveBy(-2, 0)
-    end
-
-
     if playdate.buttonIsPressed(playdate.kButtonA) then
         if not bubbleWandRaised then
             wandIn:reset()
