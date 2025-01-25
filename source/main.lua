@@ -1,3 +1,4 @@
+import "CoreLibs/animator"
 import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
@@ -15,7 +16,7 @@ local gfx <const> = playdate.graphics
 
 local playerSprite = nil
 
-local bubbleMinRadius = 5
+local bubbleMinRadius = 6
 local bubbleMaxRadius = 120
 local bubblePopsAt = 0.7
 local bubbleUnderTensionPopsAt = 0.6
@@ -45,6 +46,10 @@ end
 
 
 local bubbleRadius = bubbleMinRadius
+local bubbleWandRaised = false
+local bubbleWandLoaded = false
+local wandIn = playdate.graphics.animator.new(320, 240, 210, playdate.easingFunctions.outElastic)
+local wandOut = playdate.graphics.animator.new(320, 210, 240, playdate.easingFunctions.outElastic)
 
 
 function myGameSetUp()
@@ -56,6 +61,13 @@ function myGameSetUp()
     playerSprite = gfx.sprite.new(playerImage)
     playerSprite:moveTo(200, 120) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
     playerSprite:add()            -- This is critical!
+
+    local bubbleWandImage = gfx.image.new("images/bubbleWand")
+    assert(bubbleWandImage)
+
+    bubbleWandSprite = gfx.sprite.new(bubbleWandImage)
+    bubbleWandSprite:moveTo(140, 240)
+    bubbleWandSprite:add()
 
     -- We want an environment displayed behind our sprite.
     -- There are generally two ways to do this:
@@ -106,6 +118,40 @@ function playdate.update()
         playerSprite:moveBy(-2, 0)
     end
 
+
+    if playdate.buttonIsPressed(playdate.kButtonA) then
+        if not bubbleWandRaised then
+            wandIn:reset()
+            bubbleWandRaised = true
+        end
+
+        bubbleWandSprite:moveTo(bubbleWandSprite.x, wandIn:currentValue())
+
+
+        if bubbleWandLoaded then
+            local micLevel = getMicInput()
+            local tension = (bubbleRadius - bubbleMinRadius) / (bubbleMaxRadius - bubbleMinRadius)
+            local currentPopPoint = bubblePopsAt - tension * tension * tension
+            if micLevel > currentPopPoint then
+                -- TODO: Play pop sound
+                bubbleRadius = bubbleMinRadius
+                bubbleWandLoaded = false
+            else
+                bubbleRadius = bubbleRadius + micLevel * bubbleSizeIncreaseRate
+            end
+        end
+    else
+        if bubbleWandRaised then
+            wandOut:reset()
+            bubbleWandRaised = false
+        end
+
+        bubbleWandSprite:moveTo(bubbleWandSprite.x, wandOut:currentValue())
+        -- TODO: Add wand reload delay
+        bubbleWandLoaded = true
+    end
+
+
     -- Call the functions below in playdate.update() to draw sprites and keep
     -- timers updated. (We aren't using timers in this example, but in most
     -- average-complexity games, you will.)
@@ -113,21 +159,12 @@ function playdate.update()
     gfx.sprite.update()
     playdate.timer.updateTimers()
 
-    local micLevel = getMicInput()
 
-    local tension = (bubbleRadius - bubbleMinRadius) / (bubbleMaxRadius - bubbleMinRadius)
-    local currentPopPoint = bubblePopsAt - tension * tension * tension
-    if micLevel > currentPopPoint then
-        -- TODO: Play pop sound
-        bubbleRadius = 0
-    else
-        bubbleRadius = bubbleRadius + micLevel * bubbleSizeIncreaseRate
+    if bubbleWandRaised and wandIn:ended() and bubbleRadius > 12 then
+        gfx.pushContext()
+        gfx.setLineWidth(1)
+        gfx.setColor(gfx.kColorBlack)
+        gfx.drawCircleAtPoint(140, 194 - (bubbleRadius - bubbleMinRadius) * 0.5, bubbleRadius)
+        gfx.popContext()
     end
-
-
-    gfx.pushContext()
-    gfx.setLineWidth(1)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawCircleAtPoint(150, 242 - bubbleRadius, bubbleRadius)
-    gfx.popContext()
 end
