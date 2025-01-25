@@ -25,18 +25,24 @@ function DancingState:init()
 end
 
 function DancingState:enter()
-    self.dancer:moveTo(120, 120)
-    self.dancer:add()
-    self.dancer:playAnimation()
+    self.dancers = {}
+    for i = 1, 5 do
+        local dancer = AnimatedSprite.new(dancerImageTable)
+        dancer:addState('idle', 1, 3, { tickStep = 4 })
+        dancer:moveTo(48 * (i + 1), 120)
+        dancer:add()
+        dancer:playAnimation()
+        self.dancers[i] = dancer
+    end
 
-    self.dancer2:moveTo(125, 150)
-    self.dancer2:add()
-    self.dancer2:playAnimation()
+
+    self.selectedDancer = nil
 end
 
 function DancingState:exit()
-    self.dancer:remove()
-    self.dancer2:remove()
+    for _, dancer in ipairs(self.dancers) do
+        dancer:remove()
+    end
 end
 
 function DancingState:update()
