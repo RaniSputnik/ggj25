@@ -50,24 +50,41 @@ function DancingState:update()
         return BlowBubblesState()
     end
 
-    if playdate.buttonJustPressed(playdate.kButtonA) then
-        -- TODO: Check if you score points
-        return BlowBubblesState()
-    end
+    if self.selectedDancer == nil then
+        self.bubblePositionY -= 1
+        local bubbleHasLeftScene = self.bubblePositionY < -self.bubbleRadius
+            or self.bubblePositionX < -self.bubbleRadius
+            or self.bubblePositionX > 400 + self.bubbleRadius
+        if bubbleHasLeftScene then
+            return BlowBubblesState()
+        end
 
-    self.bubblePositionY -= 1
-    local bubbleHasLeftScene = self.bubblePositionY < -self.bubbleRadius
-        or self.bubblePositionX < -self.bubbleRadius
-        or self.bubblePositionX > 400 + self.bubbleRadius
-    if bubbleHasLeftScene then
-        return BlowBubblesState()
-    end
+        if playdate.buttonIsPressed(playdate.kButtonLeft) then
+            self.bubblePositionX -= self.bubbleStrafeSpeed
+        end
+        if playdate.buttonIsPressed(playdate.kButtonRight) then
+            self.bubblePositionX += self.bubbleStrafeSpeed
+        end
 
-    if playdate.buttonIsPressed(playdate.kButtonLeft) then
-        self.bubblePositionX -= self.bubbleStrafeSpeed
-    end
-    if playdate.buttonIsPressed(playdate.kButtonRight) then
-        self.bubblePositionX += self.bubbleStrafeSpeed
+        if playdate.buttonJustPressed(playdate.kButtonA) then
+            for _, dancer in ipairs(self.dancers) do
+                local dx = self.bubblePositionX - dancer.x
+                local dy = self.bubblePositionY - dancer.y
+                if math.sqrt(dx * dx + dy * dy) < 24 then
+                    self.selectedDancer = dancer
+                    self.bubblePositionX = dancer.x
+                    self.bubblePositionY = dancer.y
+                    break
+                end
+            end
+
+            if not self.selectedDancer then
+                -- TODO: Play pop sound
+                -- wait a second before transitioning to a new state
+
+                return BlowBubblesState()
+            end
+        end
     end
 
     return self
