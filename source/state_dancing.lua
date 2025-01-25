@@ -11,6 +11,19 @@ local dancerImageTable = gfx.imagetable.new("images/dancer")
 assert(dancerImageTable)
 
 
+local correctSounds = {}
+for i = 0, 11 do
+    local soundName = "sounds/correct-" .. i
+    print("Loading sound", soundName)
+    local sound = playdate.sound.sampleplayer.new(soundName)
+    assert(sound)
+    correctSounds[i] = sound
+end
+
+local incorrectSound = playdate.sound.sampleplayer.new("sounds/incorrect")
+assert(incorrectSound)
+
+
 local leftImage = gfx.image.new("images/left-arrow")
 local rightImage = gfx.image.new("images/right-arrow")
 local upImage = gfx.image.new("images/up-arrow")
@@ -45,6 +58,7 @@ function DancingState:enter()
     self.selectedDancer = nil
     self.incorrectMoveCount = 0
     self.correctMoveCount = 0
+    self.correctMoveMultiplier = 0
     self.requiredMoves = {}
     self.moveSprites = {}
     self.currentMoveIndex = 1
@@ -155,19 +169,31 @@ function DancingState:update()
         if nextMovePositionX < 24 then
             print("Too late!")
             self:popMove()
+            incorrectSound:play()
             self.incorrectMoveCount = self.incorrectMoveCount + 1
+            self.correctMoveMultiplier = 0
         elseif did_move and nextMovePositionX > 48 then
             print("Too early!")
+            incorrectSound:play()
             -- We don't remove the move because they could still get it right
             self.incorrectMoveCount = self.incorrectMoveCount + 1
+            self.correctMoveMultiplier = 0
         elseif did_move and not moved_correctly then
             print("Wrong move!")
             self:popMove()
+            incorrectSound:play()
             self.incorrectMoveCount = self.incorrectMoveCount + 1
+            self.correctMoveMultiplier = 0
         elseif did_move and moved_correctly then
             print("Correct!")
             self:popMove()
-            self.correctMoveCount = self.correctMoveCount + 1
+            print("Playing sound", self.correctMoveMultiplier)
+            correctSounds[self.correctMoveMultiplier]:play()
+            self.correctMoveCount += 1
+            self.correctMoveMultiplier += 1
+            if self.correctMoveMultiplier >= #correctSounds then
+                self.correctMoveMultiplier = #correctSounds - 1
+            end
         end
 
         if self.currentMoveIndex > #self.requiredMoves then
